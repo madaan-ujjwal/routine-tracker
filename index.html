@@ -1,0 +1,718 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#0f0f0f">
+<title>Sadhna Tracker</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#0f0f0f; --surface:#1a1a1a; --surface2:#222; --border:#2e2e2e;
+  --text:#f0ebe3; --muted:#6b6560; --accent:#c8a96e; --accent-dim:#2a2318;
+  --purple:#9b8ec4; --purple-dim:#1e1b2e; --green:#7ab87a; --green-dim:#182018;
+  --pink:#d4848a; --blue:#7ab8d4; --radius:16px; --radius-sm:10px;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;overscroll-behavior:none;}
+.app{max-width:430px;margin:0 auto;min-height:100vh;display:flex;flex-direction:column;}
+
+/* ── Login screen ── */
+.login-screen{position:fixed;inset:0;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 32px;z-index:200;}
+.login-logo{font-family:'DM Serif Display',serif;font-size:36px;color:var(--text);margin-bottom:8px;text-align:center;}
+.login-logo span{color:var(--accent);font-style:italic;}
+.login-sub{font-size:13px;color:var(--muted);margin-bottom:48px;text-align:center;line-height:1.6;}
+/* 
+  WHY GOOGLE SIGN-IN?
+  When you tap this button, Firebase opens a Google popup.
+  Google verifies your identity and gives Firebase a unique UID
+  tied to YOUR Google account — same UID on every device.
+  Phone, laptop, tablet — all see the same Firebase document.
+*/
+.google-btn{display:flex;align-items:center;gap:12px;padding:14px 24px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);cursor:pointer;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:500;color:var(--text);width:100%;max-width:280px;justify-content:center;transition:border-color 0.2s;}
+.google-btn:active{opacity:0.8;}
+.google-btn:hover{border-color:var(--muted);}
+.google-icon{width:20px;height:20px;flex-shrink:0;}
+.login-note{font-size:11px;color:var(--muted);margin-top:20px;text-align:center;line-height:1.6;max-width:240px;}
+
+/* ── Loading ── */
+.loading-overlay{position:fixed;inset:0;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;z-index:100;}
+.loading-spinner{width:32px;height:32px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin 0.8s linear infinite;}
+.loading-text{font-size:13px;color:var(--muted);}
+@keyframes spin{to{transform:rotate(360deg);}}
+
+/* ── Header ── */
+.header{padding:48px 24px 10px;}
+.greeting{font-family:'DM Serif Display',serif;font-size:26px;color:var(--text);line-height:1.2;}
+.greeting span{color:var(--accent);font-style:italic;}
+.header-meta{display:flex;align-items:center;gap:8px;margin-top:8px;flex-wrap:wrap;}
+.date-badge{font-size:11px;color:var(--muted);background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:4px 12px;}
+.sync-badge{font-size:11px;padding:4px 10px;border-radius:20px;cursor:default;}
+.sync-badge.synced{background:var(--green-dim);color:var(--green);}
+.sync-badge.syncing{background:var(--accent-dim);color:var(--accent);}
+.sync-badge.offline{background:#2a1818;color:var(--pink);}
+.user-btn{font-size:11px;color:var(--muted);background:none;border:1px solid var(--border);border-radius:20px;padding:4px 12px;cursor:pointer;margin-left:auto;}
+
+/* ── Brahmacharya card ── */
+.brahma-card{margin:12px 24px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px;position:relative;overflow:hidden;}
+.brahma-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--purple),var(--accent));}
+.brahma-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
+.brahma-title{font-size:13px;font-weight:500;color:var(--purple);}
+.brahma-streaks{display:flex;gap:20px;}
+.streak-item{text-align:center;}
+.streak-val{font-family:'DM Serif Display',serif;font-size:28px;color:var(--text);}
+.streak-val.active{color:var(--purple);}
+.streak-lbl{font-size:10px;color:var(--muted);margin-top:1px;}
+.brahma-cal{display:grid;grid-template-columns:repeat(10,1fr);gap:3px;margin-top:4px;}
+.brahma-dot{width:100%;aspect-ratio:1;border-radius:3px;background:var(--surface2);}
+.brahma-dot.kept{background:var(--purple);}
+.brahma-dot.broken{background:#3a2020;}
+.brahma-toggle{display:flex;align-items:center;justify-content:space-between;margin-top:12px;padding-top:12px;border-top:1px solid var(--border);}
+.brahma-toggle-label{font-size:13px;color:var(--text);}
+.toggle-switch{position:relative;width:44px;height:24px;flex-shrink:0;}
+.toggle-switch input{opacity:0;width:0;height:0;}
+.toggle-slider{position:absolute;inset:0;background:var(--surface2);border:1px solid var(--border);border-radius:12px;cursor:pointer;transition:background 0.2s;}
+.toggle-slider::before{content:'';position:absolute;width:18px;height:18px;left:2px;top:2px;background:var(--muted);border-radius:50%;transition:0.2s;}
+input:checked+.toggle-slider{background:var(--purple-dim);border-color:var(--purple);}
+input:checked+.toggle-slider::before{background:var(--purple);transform:translateX(20px);}
+
+/* ── Progress ring ── */
+.progress-wrap{padding:12px 24px 6px;display:flex;align-items:center;gap:16px;}
+.ring-wrap{position:relative;width:60px;height:60px;flex-shrink:0;}
+.ring-wrap svg{transform:rotate(-90deg);}
+.ring-bg{fill:none;stroke:var(--surface2);stroke-width:5;}
+.ring-fill{fill:none;stroke:var(--accent);stroke-width:5;stroke-linecap:round;transition:stroke-dashoffset 0.5s ease;}
+.ring-text{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:500;color:var(--accent);}
+.progress-info{flex:1;}
+.progress-label{font-size:12px;color:var(--muted);margin-bottom:2px;}
+.progress-count{font-size:20px;font-weight:500;color:var(--text);}
+.progress-count span{font-size:13px;color:var(--muted);font-weight:300;}
+
+/* ── Tabs ── */
+.edit-toggle-wrap{padding:4px 24px 0;display:flex;justify-content:flex-end;}
+.edit-toggle{font-size:12px;color:var(--muted);background:none;border:none;cursor:pointer;padding:4px 8px;border-radius:8px;}
+.edit-toggle.active{color:var(--pink);}
+.tabs{display:flex;gap:5px;padding:8px 24px 0;}
+.tab-btn{flex:1;padding:8px 4px;border-radius:var(--radius-sm);font-size:11px;font-weight:500;cursor:pointer;border:1px solid var(--border);background:var(--surface);color:var(--muted);transition:all 0.2s;}
+.tab-btn.active{background:var(--accent-dim);border-color:var(--accent);color:var(--accent);}
+
+/* ── Content ── */
+.content{flex:1;overflow-y:auto;padding:14px 24px 28px;-webkit-overflow-scrolling:touch;}
+.content::-webkit-scrollbar{display:none;}
+.section{margin-bottom:18px;}
+.section-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;}
+.section-title{font-size:10px;font-weight:500;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);}
+.add-habit-btn{font-size:11px;color:var(--accent);background:none;border:none;cursor:pointer;padding:2px 0;}
+
+/* ── Habit card ── */
+.habit-card{display:flex;align-items:center;gap:12px;padding:12px 14px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);margin-bottom:7px;cursor:pointer;transition:all 0.15s;user-select:none;}
+.habit-card:active{transform:scale(0.98);}
+.habit-card.done{background:var(--green-dim);border-color:#3a5c3a;}
+.habit-card.done .habit-name{color:var(--green);}
+.habit-card.done .check-ring{background:var(--green);border-color:var(--green);}
+.habit-card.done .check-ring::after{opacity:1;}
+.habit-card.done.sadhna{background:var(--purple-dim);border-color:#3a3060;}
+.habit-card.done.sadhna .habit-name{color:var(--purple);}
+.habit-card.done.sadhna .check-ring{background:var(--purple);border-color:var(--purple);}
+.check-ring{width:24px;height:24px;border-radius:50%;border:2px solid var(--border);flex-shrink:0;position:relative;transition:all 0.2s;}
+.check-ring::after{content:'';position:absolute;inset:0;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='20 6 9 17 4 12'%3E%3C/polyline%3E%3C/svg%3E");background-size:13px;background-repeat:no-repeat;background-position:center;opacity:0;transition:opacity 0.2s;}
+.habit-info{flex:1;min-width:0;}
+.habit-name{font-size:13px;color:var(--text);transition:color 0.2s;}
+.habit-meta{font-size:11px;color:var(--muted);margin-top:1px;}
+.color-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;}
+.delete-btn{width:26px;height:26px;border-radius:50%;background:none;border:1px solid transparent;color:var(--muted);font-size:16px;cursor:pointer;display:none;align-items:center;justify-content:center;flex-shrink:0;line-height:1;}
+
+/* ── Save ── */
+.save-wrap{padding:8px 24px 20px;}
+.save-btn{width:100%;padding:15px;background:var(--accent);color:#0f0f0f;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:500;border:none;border-radius:var(--radius);cursor:pointer;transition:opacity 0.2s;}
+.save-btn:active{opacity:0.8;}
+.save-btn:disabled{opacity:0.5;cursor:not-allowed;}
+
+/* ── Month ── */
+.month-nav{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
+.month-nav-btn{width:34px;height:34px;border-radius:50%;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;}
+.month-name{font-family:'DM Serif Display',serif;font-size:19px;color:var(--text);}
+.stats-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px;}
+.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px;}
+.stat-val{font-size:26px;font-weight:500;color:var(--text);}
+.stat-lbl{font-size:10px;color:var(--muted);margin-top:2px;}
+.stat-card.green .stat-val{color:var(--green);}
+.stat-card.amber .stat-val{color:var(--accent);}
+.stat-card.red .stat-val{color:var(--pink);}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;margin-bottom:16px;}
+.cal-head{text-align:center;font-size:10px;color:var(--muted);padding:3px 0;}
+.cal-day{border-radius:7px;border:1px solid var(--border);background:var(--surface);min-height:44px;padding:3px 2px;}
+.cal-day.empty{border-color:transparent;background:transparent;}
+.cal-day.today{border-color:var(--accent);}
+.cal-day-num{text-align:center;font-size:10px;color:var(--muted);}
+.cal-dots{display:flex;flex-wrap:wrap;gap:2px;justify-content:center;margin-top:2px;padding:0 2px;}
+.cdot{width:4px;height:4px;border-radius:50%;}
+.bars-section{margin-top:4px;}
+.bar-row{display:flex;align-items:center;gap:8px;margin-bottom:7px;}
+.bar-name{font-size:11px;color:var(--muted);width:118px;flex-shrink:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.bar-bg{flex:1;height:5px;border-radius:3px;background:var(--surface2);overflow:hidden;}
+.bar-fill{height:100%;border-radius:3px;transition:width 0.4s ease;}
+.bar-pct{font-size:11px;color:var(--muted);width:28px;text-align:right;flex-shrink:0;}
+.legend{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px;}
+.leg{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--muted);}
+.leg-dot{width:7px;height:7px;border-radius:50%;}
+
+/* ── Streak tab ── */
+.streak-full-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px;margin-bottom:16px;}
+.streak-nums{display:flex;gap:24px;margin-bottom:20px;}
+.snum-item{text-align:center;}
+.snum-val{font-family:'DM Serif Display',serif;font-size:40px;color:var(--purple);}
+.snum-lbl{font-size:11px;color:var(--muted);margin-top:2px;}
+.sfcal-month-label{font-size:11px;font-weight:500;color:var(--muted);letter-spacing:0.05em;text-transform:uppercase;margin-bottom:6px;}
+.sfcal{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;margin-bottom:14px;}
+.sfcal-head{text-align:center;font-size:9px;color:var(--muted);padding:2px 0;}
+.sfcal-day{border-radius:5px;aspect-ratio:1;display:flex;align-items:center;justify-content:center;font-size:9px;color:var(--muted);background:var(--surface2);}
+.sfcal-day.empty{background:transparent;color:transparent;}
+.sfcal-day.kept{background:var(--purple);color:#fff;}
+.sfcal-day.broken{background:#3a2020;color:var(--pink);}
+.sfcal-day.today-s{outline:1.5px solid var(--accent);outline-offset:-1px;}
+
+/* ── Modal ── */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:300;display:none;align-items:flex-end;justify-content:center;}
+.modal-overlay.show{display:flex;}
+.modal{background:var(--surface);border-radius:var(--radius) var(--radius) 0 0;padding:20px 24px 36px;width:100%;max-width:430px;}
+.modal-title{font-size:15px;font-weight:500;color:var(--text);margin-bottom:16px;}
+.modal input{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 14px;font-size:14px;color:var(--text);font-family:'DM Sans',sans-serif;margin-bottom:12px;outline:none;}
+.modal input:focus{border-color:var(--accent);}
+.modal input::placeholder{color:var(--muted);}
+.modal-label{font-size:11px;color:var(--muted);margin-bottom:6px;}
+.modal-actions{display:flex;gap:8px;margin-top:6px;}
+.modal-btn{flex:1;padding:12px;border-radius:var(--radius-sm);font-size:13px;font-weight:500;cursor:pointer;border:1px solid var(--border);background:var(--surface2);color:var(--muted);}
+.modal-btn.primary{background:var(--accent);border-color:var(--accent);color:#0f0f0f;}
+.type-picker{display:flex;gap:6px;margin-bottom:12px;}
+.type-option{flex:1;padding:6px;border-radius:8px;font-size:11px;text-align:center;cursor:pointer;border:1px solid var(--border);background:var(--surface2);color:var(--muted);}
+.type-option.selected{background:var(--accent-dim);border-color:var(--accent);color:var(--accent);}
+.color-picker{display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap;}
+.color-option{width:22px;height:22px;border-radius:50%;cursor:pointer;border:2px solid transparent;transition:border-color 0.15s;}
+.color-option.selected{border-color:var(--text);}
+
+/* ── Toast ── */
+.toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);padding:9px 18px;font-size:12px;color:var(--text);opacity:0;transition:opacity 0.3s;pointer-events:none;z-index:999;white-space:nowrap;}
+.toast.show{opacity:1;}
+</style>
+</head>
+<body>
+
+<!-- ─────────────────────────────────────────────────────
+  LOGIN SCREEN
+  Shown only when user is not signed in.
+  After first Google sign-in on a device, this is skipped
+  automatically — Firebase remembers the session.
+───────────────────────────────────────────────────── -->
+<div class="login-screen" id="login-screen" style="display:none;">
+  <div class="login-logo">Sadhna<br><span>Tracker</span></div>
+  <div class="login-sub">Your daily practices,<br>tracked with intention.</div>
+  <button class="google-btn" onclick="signInWithGoogle()">
+    <svg class="google-icon" viewBox="0 0 24 24">
+      <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+      <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+      <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/>
+      <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+    </svg>
+    Sign in with Google
+  </button>
+  <div class="login-note">Your data is private and syncs across all your devices using your Google account.</div>
+</div>
+
+<!-- Loading -->
+<div class="loading-overlay" id="loading">
+  <div class="loading-spinner"></div>
+  <div class="loading-text" id="loading-text">Loading...</div>
+</div>
+
+<!-- Add Habit Modal -->
+<div class="modal-overlay" id="modal-overlay" onclick="closeModal(event)">
+  <div class="modal">
+    <div class="modal-title">Add new habit</div>
+    <input type="text" id="modal-name" placeholder="Habit name (e.g. Running)" maxlength="40"/>
+    <input type="text" id="modal-meta" placeholder="Note (e.g. 20 min)" maxlength="30"/>
+    <div class="modal-label">Group</div>
+    <div class="type-picker" id="modal-type-picker">
+      <div class="type-option selected" data-type="sadhna" onclick="selectType(this)">Sadhna</div>
+      <div class="type-option" data-type="habit" onclick="selectType(this)">Daily habit</div>
+    </div>
+    <div class="modal-label">Color</div>
+    <div class="color-picker" id="modal-color-picker"></div>
+    <div class="modal-actions">
+      <button class="modal-btn" onclick="closeModalDirect()">Cancel</button>
+      <button class="modal-btn primary" onclick="confirmAdd()">Add habit</button>
+    </div>
+  </div>
+</div>
+
+<!-- Main App -->
+<div class="app" id="app" style="display:none;">
+  <div class="header">
+    <div class="greeting">Good <span id="time-greeting">morning</span>,<br>let's track today.</div>
+    <div class="header-meta">
+      <div class="date-badge" id="date-badge"></div>
+      <div class="sync-badge synced" id="sync-status">Synced</div>
+      <button class="user-btn" id="user-btn" onclick="signOut()">Sign out</button>
+    </div>
+  </div>
+
+  <div class="brahma-card">
+    <div class="brahma-top">
+      <div class="brahma-title">Brahmacharya</div>
+      <div class="brahma-streaks">
+        <div class="streak-item"><div class="streak-val active" id="brahma-current">0</div><div class="streak-lbl">current</div></div>
+        <div class="streak-item"><div class="streak-val" id="brahma-longest">0</div><div class="streak-lbl">longest</div></div>
+      </div>
+    </div>
+    <div class="brahma-cal" id="brahma-cal"></div>
+    <div class="brahma-toggle">
+      <div class="brahma-toggle-label">Maintained today</div>
+      <label class="toggle-switch">
+        <input type="checkbox" id="brahma-today" onchange="toggleBrahma()">
+        <span class="toggle-slider"></span>
+      </label>
+    </div>
+  </div>
+
+  <div class="progress-wrap">
+    <div class="ring-wrap">
+      <svg width="60" height="60" viewBox="0 0 60 60">
+        <circle class="ring-bg" cx="30" cy="30" r="25"/>
+        <circle class="ring-fill" id="ring-fill" cx="30" cy="30" r="25" stroke-dasharray="157" stroke-dashoffset="157"/>
+      </svg>
+      <div class="ring-text" id="ring-pct">0%</div>
+    </div>
+    <div class="progress-info">
+      <div class="progress-label">Today's habits</div>
+      <div class="progress-count"><span id="done-count">0</span> <span id="total-count">of 18</span></div>
+    </div>
+  </div>
+
+  <div class="edit-toggle-wrap" id="edit-toggle-wrap">
+    <button class="edit-toggle" id="edit-toggle-btn" onclick="toggleEditMode()">Edit habits</button>
+  </div>
+
+  <div class="tabs">
+    <button class="tab-btn active" onclick="showTab('today')">Today</button>
+    <button class="tab-btn" onclick="showTab('month')">Monthly</button>
+    <button class="tab-btn" onclick="showTab('streak')">Streak</button>
+  </div>
+
+  <div class="content" id="content-today"><div id="habit-list"></div></div>
+
+  <div class="content" id="content-month" style="display:none;">
+    <div class="month-nav">
+      <button class="month-nav-btn" onclick="changeMonth(-1)">&#8592;</button>
+      <div class="month-name" id="month-name"></div>
+      <button class="month-nav-btn" onclick="changeMonth(1)">&#8594;</button>
+    </div>
+    <div class="stats-grid" id="stats-grid"></div>
+    <div class="legend">
+      <div class="leg"><div class="leg-dot" style="background:var(--green)"></div>Done</div>
+      <div class="leg"><div class="leg-dot" style="background:var(--border)"></div>Skipped</div>
+    </div>
+    <div class="cal-grid" id="cal-grid"></div>
+    <div class="bars-section" id="bars-section"></div>
+  </div>
+
+  <div class="content" id="content-streak" style="display:none;">
+    <div class="streak-full-card">
+      <div class="streak-nums">
+        <div class="snum-item"><div class="snum-val" id="s-current">0</div><div class="snum-lbl">Current</div></div>
+        <div class="snum-item"><div class="snum-val" id="s-longest">0</div><div class="snum-lbl">Longest</div></div>
+        <div class="snum-item"><div class="snum-val" id="s-total">0</div><div class="snum-lbl">Total days</div></div>
+      </div>
+      <div id="streak-full-cal"></div>
+    </div>
+  </div>
+
+  <div class="save-wrap" id="save-wrap">
+    <button class="save-btn" id="save-btn" onclick="saveToday()">Save today</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!--
+  WHY 3 SDKs?
+  firebase-app    → core initializer, always needed
+  firebase-auth   → Google Sign-In, gives same UID on every device
+  firebase-firestore → actual database where your data lives
+-->
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script>
+// ── Firebase init ──────────────────────────────────────────
+const firebaseConfig = {
+  apiKey: "AIzaSyCTS6tBPXnbOk5H7d1IYkwimCnVGbFmdbE",
+  authDomain: "sadhna-tracker-3319b.firebaseapp.com",
+  projectId: "sadhna-tracker-3319b",
+  storageBucket: "sadhna-tracker-3319b.firebasestorage.app",
+  messagingSenderId: "917915996974",
+  appId: "1:917915996974:web:643b00db686dc9aab7e0bf"
+};
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db   = firebase.firestore();
+
+// ── Default habits ─────────────────────────────────────────
+const DEFAULT_GROUPS = [
+  { id:'g_am', label:'Morning sadhna', type:'sadhna', habits:[
+    {id:'am_guru',      name:'Guru pooja',       meta:'Morning',                 color:'#9b8ec4'},
+    {id:'am_shambhavi', name:'Shambhavi',         meta:'Morning',                 color:'#9b8ec4'},
+    {id:'am_surya',     name:'Surya kriya',       meta:'Morning · 1 or 2 cycles', color:'#9b8ec4'},
+    {id:'am_bhairavi',  name:'Bhairavi sadhna',   meta:'Morning',                 color:'#9b8ec4'},
+    {id:'am_miracle',   name:'Miracle of mind',   meta:'Morning',                 color:'#9b8ec4'},
+  ]},
+  { id:'g_pm', label:'Evening sadhna', type:'sadhna', habits:[
+    {id:'pm_guru',      name:'Guru pooja',        meta:'Evening',                 color:'#9b8ec4'},
+    {id:'pm_shambhavi', name:'Shambhavi',          meta:'Evening',                 color:'#9b8ec4'},
+    {id:'pm_surya',     name:'Surya kriya',        meta:'Evening · 1 or 2 cycles', color:'#9b8ec4'},
+    {id:'pm_bhairavi',  name:'Bhairavi sadhna',    meta:'Evening',                 color:'#9b8ec4'},
+    {id:'pm_miracle',   name:'Miracle of mind',    meta:'Evening',                 color:'#9b8ec4'},
+  ]},
+  { id:'g_daily', label:'Daily habits', type:'habit', habits:[
+    {id:'flute',   name:'Flute practice',  meta:'20 min',  color:'#c8a96e'},
+    {id:'dsa',     name:'DSA',             meta:'1 hour',  color:'#7ab87a'},
+    {id:'youtube', name:'YouTube video',   meta:'30 min',  color:'#d4848a'},
+    {id:'claude',  name:'Talk to Claude',  meta:'20 min',  color:'#7ab8d4'},
+    {id:'book',    name:'Book reading',    meta:'5 pages', color:'#a8b87a'},
+    {id:'windup',  name:'Wind up day',     meta:'20 min',  color:'#888888'},
+    {id:'wakeup',  name:'Woke up by 7 AM', meta:'Morning', color:'#c8a96e'},
+    {id:'sleep',   name:'Slept on time',   meta:'~12 AM',  color:'#8888c8'},
+  ]}
+];
+const COLORS = ['#9b8ec4','#7ab87a','#c8a96e','#d4848a','#7ab8d4','#a8b87a','#d4a8d4','#c8c88a','#8888c8','#d4a884'];
+
+// ── App state ──────────────────────────────────────────────
+let currentUID    = null;
+let groups        = JSON.parse(JSON.stringify(DEFAULT_GROUPS));
+let todayState    = {};
+let allData       = {};
+let brahmaData    = {};
+let viewMonth     = new Date().getMonth();
+let viewYear      = new Date().getFullYear();
+let editMode      = false;
+let addingToGroup = null;
+let selectedColor = COLORS[0];
+let selectedType  = 'sadhna';
+
+// ── Helpers ────────────────────────────────────────────────
+function allHabits(){ return groups.flatMap(g=>g.habits.map(h=>({...h,type:g.type,gid:g.id}))); }
+function todayKey(){ const n=new Date(); return `${n.getFullYear()}-${String(n.getMonth()+1).padStart(2,'0')}-${String(n.getDate()).padStart(2,'0')}`; }
+function dateKey(y,m,d){ return `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`; }
+function genId(){ return 'h_'+Date.now()+'_'+Math.random().toString(36).slice(2,6); }
+function showToast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),2500); }
+function setSyncStatus(s){ const el=document.getElementById('sync-status'); const m={synced:['Synced','synced'],syncing:['Saving...','syncing'],offline:['Offline','offline']}; el.textContent=m[s][0]; el.className='sync-badge '+m[s][1]; }
+function setLoadingText(t){ document.getElementById('loading-text').textContent=t; }
+function show(id){ document.getElementById(id).style.display='flex'; }
+function hide(id){ document.getElementById(id).style.display='none'; }
+
+// ─────────────────────────────────────────────────────────
+// GOOGLE SIGN-IN
+// Opens a popup where you choose your Google account.
+// Firebase gets your Google UID — same value on every device
+// because it's tied to your Google account, not your device.
+// After first sign-in, Firebase caches the session so you
+// never see the popup again on that device.
+// ─────────────────────────────────────────────────────────
+async function signInWithGoogle(){
+  try {
+    const provider = new firebase.auth.GoogleAuthProvider();
+    // On mobile, redirect works better than popup
+    const isMobile = /Android|iPhone|iPad/i.test(navigator.userAgent);
+    if(isMobile){
+      await auth.signInWithRedirect(provider);
+      // After redirect comes back, onAuthStateChanged handles the rest
+    } else {
+      await auth.signInWithPopup(provider);
+    }
+  } catch(e){
+    showToast('Sign in failed. Try again.');
+    console.error(e);
+  }
+}
+
+async function signOut(){
+  if(!confirm('Sign out? Your data stays saved in the cloud.')) return;
+  await auth.signOut();
+  location.reload();
+}
+
+// ─────────────────────────────────────────────────────────
+// AUTH STATE LISTENER
+// This is the heart of the auth flow.
+// Firebase automatically calls this whenever auth state changes:
+// - App opens → checks if session exists → calls with user or null
+// - After sign-in → calls with the user object
+// - After sign-out → calls with null
+// We never manually check "is user logged in" — Firebase tells us.
+// ─────────────────────────────────────────────────────────
+auth.onAuthStateChanged(async (user) => {
+  if(user){
+    // User is signed in — hide login, load data, show app
+    currentUID = user.uid;
+    hide('login-screen');
+    show('loading');
+    setLoadingText('Loading your data...');
+    // Show user's name on the sign out button
+    const name = user.displayName ? user.displayName.split(' ')[0] : 'You';
+    document.getElementById('user-btn').textContent = name + ' · Sign out';
+    await loadAll();
+    hide('loading');
+    show('app');
+    renderToday();
+  } else {
+    // Not signed in — show login screen
+    hide('loading');
+    hide('app');
+    show('login-screen');
+  }
+});
+
+// ─────────────────────────────────────────────────────────
+// LOAD DATA
+// Reads from Firestore at tracker/{your-google-uid}
+// Falls back to localStorage if offline
+// ─────────────────────────────────────────────────────────
+async function loadAll(){
+  try {
+    const snap = await db.collection('tracker').doc(currentUID).get();
+    if(snap.exists){
+      const d = snap.data();
+      if(d.groups && d.groups.length) groups = d.groups;
+      if(d.log)    allData    = d.log;
+      if(d.brahma) brahmaData = d.brahma;
+    } else {
+      // First time — try migrating old anonymous/main data
+      const oldSnap = await db.collection('tracker').doc('main').get();
+      if(oldSnap.exists){
+        const old = oldSnap.data();
+        if(old.groups && old.groups.length) groups = old.groups;
+        if(old.log)    allData    = old.log;
+        if(old.brahma) brahmaData = old.brahma;
+        await db.collection('tracker').doc(currentUID).set({groups,log:allData,brahma:brahmaData});
+        showToast('Previous data migrated ✓');
+      } else {
+        groups = JSON.parse(JSON.stringify(DEFAULT_GROUPS));
+      }
+    }
+    setSyncStatus('synced');
+  } catch(e){
+    // Offline — load from localStorage
+    try{
+      const d=localStorage.getItem('sadhna_v2');
+      if(d){ const p=JSON.parse(d); if(p.groups) groups=p.groups; if(p.log) allData=p.log; if(p.brahma) brahmaData=p.brahma; }
+    }catch(_){}
+    setSyncStatus('offline');
+  }
+}
+
+// ─────────────────────────────────────────────────────────
+// SAVE DATA
+// Writes to tracker/{your-google-uid} in Firestore.
+// Always also saves to localStorage as offline backup.
+// ─────────────────────────────────────────────────────────
+async function saveAll(){
+  setSyncStatus('syncing');
+  const btn=document.getElementById('save-btn'); btn.disabled=true; btn.textContent='Saving...';
+  const payload={groups,log:allData,brahma:brahmaData};
+  try{
+    await db.collection('tracker').doc(currentUID).set(payload);
+    localStorage.setItem('sadhna_v2',JSON.stringify(payload));
+    setSyncStatus('synced'); showToast('Saved to cloud ✓');
+  }catch(e){
+    localStorage.setItem('sadhna_v2',JSON.stringify(payload));
+    setSyncStatus('offline'); showToast('Saved locally (offline)');
+  }finally{
+    btn.disabled=false; btn.textContent='Save today';
+  }
+}
+
+// ── Ring ───────────────────────────────────────────────────
+function updateRing(){
+  const all=allHabits(); const done=all.filter(h=>todayState[h.id]).length; const total=all.length;
+  const pct=total?Math.round((done/total)*100):0; const circ=157;
+  document.getElementById('ring-fill').style.strokeDashoffset=circ-(circ*pct/100);
+  document.getElementById('ring-pct').textContent=pct+'%';
+  document.getElementById('done-count').textContent=done;
+  document.getElementById('total-count').textContent='of '+total;
+}
+
+// ── Render today ───────────────────────────────────────────
+function renderToday(){
+  const saved=allData[todayKey()]||{};
+  allHabits().forEach(h=>todayState[h.id]=saved[h.id]||false);
+  document.getElementById('brahma-today').checked=brahmaData[todayKey()]||false;
+  renderBrahmaCard();
+  const list=document.getElementById('habit-list'); list.innerHTML='';
+  groups.forEach(g=>{
+    if(!g.habits.length && !editMode) return;
+    const sec=document.createElement('div'); sec.className='section';
+    const sh=document.createElement('div'); sh.className='section-header';
+    const st=document.createElement('div'); st.className='section-title'; st.textContent=g.label;
+    const ab=document.createElement('button'); ab.className='add-habit-btn'; ab.textContent='+ Add'; ab.onclick=()=>openModal(g.id);
+    sh.appendChild(st); sh.appendChild(ab); sec.appendChild(sh);
+    g.habits.forEach(h=>{
+      const card=document.createElement('div');
+      card.className='habit-card'+(todayState[h.id]?' done':'')+(g.type==='sadhna'?' sadhna':'')+(editMode?' edit-mode':'');
+      card.id='card-'+h.id;
+      card.onclick=(e)=>{ if(e.target.classList.contains('delete-btn')) return; toggle(h.id,g.type==='sadhna'); };
+      const del=document.createElement('button'); del.className='delete-btn'; del.innerHTML='&times;';
+      del.onclick=(e)=>{e.stopPropagation();deleteHabit(g.id,h.id);};
+      if(editMode) del.style.display='flex';
+      card.innerHTML=`<div class="check-ring"></div><div class="color-dot" style="background:${h.color}"></div><div class="habit-info"><div class="habit-name">${h.name}</div><div class="habit-meta">${h.meta}</div></div>`;
+      card.appendChild(del); sec.appendChild(card);
+    });
+    list.appendChild(sec);
+  });
+  updateRing();
+}
+
+function toggle(id,isSadhna){
+  todayState[id]=!todayState[id];
+  const card=document.getElementById('card-'+id); if(!card) return;
+  card.className='habit-card'+(todayState[id]?' done':'')+(isSadhna?' sadhna':'')+(editMode?' edit-mode':'');
+  const del=card.querySelector('.delete-btn'); if(del&&editMode) del.style.display='flex';
+  updateRing();
+}
+
+function toggleEditMode(){
+  editMode=!editMode;
+  const btn=document.getElementById('edit-toggle-btn');
+  btn.textContent=editMode?'Done editing':'Edit habits';
+  btn.className='edit-toggle'+(editMode?' active':'');
+  renderToday();
+}
+
+function deleteHabit(gid,hid){
+  const g=groups.find(g=>g.id===gid); if(!g) return;
+  g.habits=g.habits.filter(h=>h.id!==hid);
+  renderToday(); showToast('Habit removed');
+}
+
+// ── Modal ──────────────────────────────────────────────────
+function openModal(gid){
+  addingToGroup=gid; selectedColor=COLORS[0]; selectedType='sadhna';
+  document.getElementById('modal-name').value='';
+  document.getElementById('modal-meta').value='';
+  const cp=document.getElementById('modal-color-picker'); cp.innerHTML='';
+  COLORS.forEach(c=>{ const d=document.createElement('div'); d.className='color-option'+(c===selectedColor?' selected':''); d.style.background=c; d.onclick=()=>{ selectedColor=c; cp.querySelectorAll('.color-option').forEach(o=>o.classList.remove('selected')); d.classList.add('selected'); }; cp.appendChild(d); });
+  const g=groups.find(g=>g.id===gid);
+  if(g){ selectedType=g.type; document.querySelectorAll('.type-option').forEach(o=>o.classList.toggle('selected',o.dataset.type===selectedType)); }
+  document.getElementById('modal-overlay').classList.add('show');
+  setTimeout(()=>document.getElementById('modal-name').focus(),100);
+}
+function closeModal(e){ if(e.target===document.getElementById('modal-overlay')) closeModalDirect(); }
+function closeModalDirect(){ document.getElementById('modal-overlay').classList.remove('show'); }
+function selectType(el){ selectedType=el.dataset.type; document.querySelectorAll('.type-option').forEach(o=>o.classList.remove('selected')); el.classList.add('selected'); }
+function confirmAdd(){
+  const name=document.getElementById('modal-name').value.trim();
+  if(!name){ showToast('Enter a habit name'); return; }
+  const meta=document.getElementById('modal-meta').value.trim()||'Daily';
+  const g=groups.find(g=>g.id===addingToGroup); if(!g) return;
+  g.type=selectedType;
+  g.habits.push({id:genId(),name,meta,color:selectedColor});
+  closeModalDirect(); renderToday(); showToast('Habit added!');
+}
+
+// ── Brahmacharya ───────────────────────────────────────────
+function toggleBrahma(){ brahmaData[todayKey()]=document.getElementById('brahma-today').checked; renderBrahmaCard(); }
+function calcStreaks(){
+  const today=new Date(); let current=0,longest=0,run=0,total=0;
+  const keys=[]; for(let i=0;i<365;i++){ const d=new Date(today); d.setDate(today.getDate()-i); keys.push(dateKey(d.getFullYear(),d.getMonth(),d.getDate())); }
+  for(let i=0;i<keys.length;i++){ if(brahmaData[keys[i]]===true) current++; else break; }
+  Object.keys(brahmaData).sort().forEach(k=>{ if(brahmaData[k]===true){run++;total++;longest=Math.max(longest,run);}else run=0; });
+  return {current,longest,total};
+}
+function renderBrahmaCard(){
+  const {current,longest}=calcStreaks();
+  document.getElementById('brahma-current').textContent=current;
+  document.getElementById('brahma-longest').textContent=longest;
+  const cal=document.getElementById('brahma-cal'); cal.innerHTML='';
+  const today=new Date();
+  for(let i=29;i>=0;i--){ const d=new Date(today); d.setDate(today.getDate()-i); const k=dateKey(d.getFullYear(),d.getMonth(),d.getDate()); const dot=document.createElement('div'); dot.className='brahma-dot'; if(k in brahmaData) dot.classList.add(brahmaData[k]?'kept':'broken'); cal.appendChild(dot); }
+}
+
+// ── Save ───────────────────────────────────────────────────
+function saveToday(){ allData[todayKey()]={...todayState}; saveAll(); }
+
+// ── Tabs ───────────────────────────────────────────────────
+function showTab(t){
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.querySelector(`[onclick="showTab('${t}')"]`).classList.add('active');
+  ['today','month','streak'].forEach(id=>{ document.getElementById('content-'+id).style.display=id===t?'block':'none'; });
+  document.getElementById('save-wrap').style.display=t==='today'?'block':'none';
+  document.getElementById('edit-toggle-wrap').style.display=t==='today'?'flex':'none';
+  if(t==='month') renderMonth();
+  if(t==='streak') renderStreakFull();
+}
+
+// ── Month ──────────────────────────────────────────────────
+function changeMonth(d){ viewMonth+=d; if(viewMonth>11){viewMonth=0;viewYear++;} if(viewMonth<0){viewMonth=11;viewYear--;} renderMonth(); }
+function renderMonth(){
+  const mn=['January','February','March','April','May','June','July','August','September','October','November','December'];
+  document.getElementById('month-name').textContent=mn[viewMonth]+' '+viewYear;
+  const dim=new Date(viewYear,viewMonth+1,0).getDate(); const today=new Date();
+  const all=allHabits(); const TOTAL=all.length;
+  let perfect=0,partial=0,missed=0,logged=0;
+  for(let d=1;d<=dim;d++){ const dd=allData[dateKey(viewYear,viewMonth,d)]; if(!dd) continue; logged++; const done=all.filter(h=>dd[h.id]).length; if(done===TOTAL) perfect++; else if(done===0) missed++; else partial++; }
+  document.getElementById('stats-grid').innerHTML=`<div class="stat-card"><div class="stat-val">${logged}</div><div class="stat-lbl">Days logged</div></div><div class="stat-card green"><div class="stat-val">${perfect}</div><div class="stat-lbl">Perfect days</div></div><div class="stat-card amber"><div class="stat-val">${partial}</div><div class="stat-lbl">Partial days</div></div><div class="stat-card red"><div class="stat-val">${missed}</div><div class="stat-lbl">Missed days</div></div>`;
+  const calEl=document.getElementById('cal-grid'); calEl.innerHTML='';
+  ['S','M','T','W','T','F','S'].forEach(d=>{ const h=document.createElement('div'); h.className='cal-head'; h.textContent=d; calEl.appendChild(h); });
+  const firstDay=new Date(viewYear,viewMonth,1).getDay();
+  let cells=[]; for(let i=0;i<firstDay;i++) cells.push(null); for(let d=1;d<=dim;d++) cells.push(d); while(cells.length%7!==0) cells.push(null);
+  cells.forEach(d=>{ const cell=document.createElement('div'); if(!d){cell.className='cal-day empty';calEl.appendChild(cell);return;} const isToday=today.getDate()===d&&today.getMonth()===viewMonth&&today.getFullYear()===viewYear; cell.className='cal-day'+(isToday?' today':''); const nd=document.createElement('div'); nd.className='cal-day-num'; nd.textContent=d; cell.appendChild(nd); const dd=allData[dateKey(viewYear,viewMonth,d)]; if(dd){const dots=document.createElement('div');dots.className='cal-dots';all.forEach(h=>{const dot=document.createElement('div');dot.className='cdot';dot.style.background=dd[h.id]?h.color:'#2e2e2e';dots.appendChild(dot);});cell.appendChild(dots);} calEl.appendChild(cell); });
+  const days=Object.keys(allData).filter(k=>{const p=k.split('-');return parseInt(p[1])-1===viewMonth&&parseInt(p[0])===viewYear;}); const total=days.length||1;
+  const barsEl=document.getElementById('bars-section'); barsEl.innerHTML='<div style="font-size:11px;font-weight:500;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted);margin-bottom:8px;">Consistency</div>';
+  all.forEach(h=>{ const done=days.filter(dk=>allData[dk]&&allData[dk][h.id]).length; const pct=Math.round((done/total)*100); const row=document.createElement('div'); row.className='bar-row'; row.innerHTML=`<div class="bar-name">${h.name}</div><div class="bar-bg"><div class="bar-fill" style="width:${pct}%;background:${h.color}"></div></div><div class="bar-pct">${pct}%</div>`; barsEl.appendChild(row); });
+}
+
+// ── Streak full ────────────────────────────────────────────
+function renderStreakFull(){
+  const {current,longest,total}=calcStreaks();
+  document.getElementById('s-current').textContent=current;
+  document.getElementById('s-longest').textContent=longest;
+  document.getElementById('s-total').textContent=total;
+  const wrap=document.getElementById('streak-full-cal'); wrap.innerHTML='';
+  const today=new Date();
+  for(let mo=2;mo>=0;mo--){
+    const d=new Date(today.getFullYear(),today.getMonth()-mo,1);
+    const y=d.getFullYear(); const m=d.getMonth();
+    const mn=['January','February','March','April','May','June','July','August','September','October','November','December'];
+    const lbl=document.createElement('div'); lbl.className='sfcal-month-label'; lbl.textContent=mn[m]+' '+y; wrap.appendChild(lbl);
+    const grid=document.createElement('div'); grid.className='sfcal';
+    ['S','M','T','W','T','F','S'].forEach(dh=>{ const h=document.createElement('div'); h.className='sfcal-head'; h.textContent=dh; grid.appendChild(h); });
+    const firstDay=new Date(y,m,1).getDay(); const dim=new Date(y,m+1,0).getDate();
+    for(let i=0;i<firstDay;i++){ const e=document.createElement('div'); e.className='sfcal-day empty'; grid.appendChild(e); }
+    for(let day=1;day<=dim;day++){
+      const k=dateKey(y,m,day); const cell=document.createElement('div'); cell.className='sfcal-day';
+      const isToday=today.getDate()===day&&today.getMonth()===m&&today.getFullYear()===y;
+      if(isToday) cell.classList.add('today-s');
+      if(k in brahmaData) cell.classList.add(brahmaData[k]?'kept':'broken');
+      cell.textContent=day; grid.appendChild(cell);
+    }
+    wrap.appendChild(grid);
+  }
+}
+
+// ─────────────────────────────────────────────────────────
+// BOOT
+// We don't call signIn here — we just set up the date/time
+// display and let onAuthStateChanged handle everything else.
+// Firebase will automatically detect if you're already
+// signed in and call onAuthStateChanged with your user.
+// ─────────────────────────────────────────────────────────
+(function boot(){
+  const h=new Date().getHours();
+  document.getElementById('time-greeting').textContent=h<12?'morning':h<17?'afternoon':'evening';
+  document.getElementById('date-badge').textContent=new Date().toLocaleDateString('en-IN',{weekday:'short',day:'numeric',month:'short'});
+  // Handle redirect result on mobile after Google sign-in redirect
+  auth.getRedirectResult().catch(e=>console.error('Redirect error:',e));
+})();
+</script>
+</body>
+</html>
