@@ -693,16 +693,14 @@ function hide(id){document.getElementById(id).style.display='none';}
 function togglePanel(which){
   const ytWrap=document.getElementById('yt-panel-wrap');
   const ytIcon=document.getElementById('yt-expand-icon');
+  if(!ytWrap)return;
   if(openPanel===which){
-    // close current
     ytWrap.classList.remove('open');
+    if(ytIcon)ytIcon.textContent='▾';
     openPanel=null;
   } else {
-    // close both, open requested
-    ytWrap.classList.remove('open');
-    ytIcon.textContent='▾';
     ytWrap.classList.add('open');
-    ytIcon.textContent='▴';
+    if(ytIcon)ytIcon.textContent='▴';
     openPanel=which;
   }
 }
@@ -840,7 +838,6 @@ function updateRing(){
 function renderToday(){
   const saved=allData[todayKey()]||{};
   allHabits().forEach(h=>todayState[h.id]=saved[h.id]||false);
-  document.getElementById('brahma-today').checked=brahmaData[todayKey()]||false;
   renderYtPanel();updateStatusBar();
   const list=document.getElementById('habit-list');list.innerHTML='';
   let bonusStarted=false;
