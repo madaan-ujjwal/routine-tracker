@@ -442,20 +442,10 @@ input:checked+.toggle-slider::before{background:var(--purple);transform:translat
 
   <!-- ── COMPACT STATUS BAR ──
     Always visible on every tab.
-    Brahmacharya pill: shows streak, tap to expand full detail.
     YouTube pill: shows today's minutes, tap to expand log.
     Expanding one closes the other automatically.
   -->
   <div class="status-bar">
-    <div class="status-pill brahma-pill" id="brahma-pill" onclick="togglePanel('brahma')">
-      <div class="sp-icon" style="background:var(--purple);"></div>
-      <div class="sp-main">
-        <div class="sp-title">Brahmacharya</div>
-        <div class="sp-sub" id="brahma-pill-sub">0 day streak</div>
-      </div>
-      <div class="sp-value" id="brahma-pill-val" style="color:var(--purple);">0</div>
-      <div class="sp-expand" id="brahma-expand-icon">▾</div>
-    </div>
     <div class="status-pill yt-pill-ok" id="yt-pill" onclick="togglePanel('yt')">
       <div class="sp-icon" id="yt-pill-icon" style="background:var(--green);"></div>
       <div class="sp-main">
@@ -464,24 +454,6 @@ input:checked+.toggle-slider::before{background:var(--purple);transform:translat
       </div>
       <div class="sp-value" id="yt-pill-val" style="color:var(--green);">0m</div>
       <div class="sp-expand" id="yt-expand-icon">▾</div>
-    </div>
-  </div>
-
-  <!-- Brahmacharya expanded panel -->
-  <div class="expand-panel" id="brahma-panel-wrap">
-    <div class="brahma-panel">
-      <div class="brahma-panel-top">
-        <div class="brahma-panel-title">Brahmacharya</div>
-        <div class="brahma-streaks">
-          <div class="streak-item"><div class="streak-val active" id="brahma-current">0</div><div class="streak-lbl">current</div></div>
-          <div class="streak-item"><div class="streak-val" id="brahma-longest">0</div><div class="streak-lbl">longest</div></div>
-        </div>
-      </div>
-      <div class="brahma-cal" id="brahma-cal"></div>
-      <div class="brahma-toggle">
-        <div class="brahma-toggle-lbl">Maintained today</div>
-        <label class="toggle-switch"><input type="checkbox" id="brahma-today" onchange="toggleBrahma()"><span class="toggle-slider"></span></label>
-      </div>
     </div>
   </div>
 
@@ -719,34 +691,24 @@ function hide(id){document.getElementById(id).style.display='none';}
 // One tap opens the panel, another tap closes it.
 // Opening one automatically closes the other.
 function togglePanel(which){
-  const brahmaWrap=document.getElementById('brahma-panel-wrap');
   const ytWrap=document.getElementById('yt-panel-wrap');
-  const brahmaIcon=document.getElementById('brahma-expand-icon');
   const ytIcon=document.getElementById('yt-expand-icon');
   if(openPanel===which){
     // close current
-    brahmaWrap.classList.remove('open');
     ytWrap.classList.remove('open');
-    brahmaIcon.textContent='▾';ytIcon.textContent='▾';
     openPanel=null;
   } else {
     // close both, open requested
-    brahmaWrap.classList.remove('open');
     ytWrap.classList.remove('open');
-    brahmaIcon.textContent='▾';ytIcon.textContent='▾';
-    if(which==='brahma'){brahmaWrap.classList.add('open');brahmaIcon.textContent='▴';}
-    else{ytWrap.classList.add('open');ytIcon.textContent='▴';}
+    ytIcon.textContent='▾';
+    ytWrap.classList.add('open');
+    ytIcon.textContent='▴';
     openPanel=which;
   }
 }
 
 // Update the compact status bar pills
 function updateStatusBar(){
-  // Brahmacharya pill
-  const{current}=calcStreaks();
-  document.getElementById('brahma-pill-val').textContent=current;
-  document.getElementById('brahma-pill-sub').textContent=current===1?'1 day streak':current+' day streak';
-
   // YouTube pill
   const tk=todayKey();
   const sessions=(ytData[tk]&&ytData[tk].sessions)||[];
@@ -879,7 +841,7 @@ function renderToday(){
   const saved=allData[todayKey()]||{};
   allHabits().forEach(h=>todayState[h.id]=saved[h.id]||false);
   document.getElementById('brahma-today').checked=brahmaData[todayKey()]||false;
-  renderBrahmaPanel();renderYtPanel();updateStatusBar();
+  renderYtPanel();updateStatusBar();
   const list=document.getElementById('habit-list');list.innerHTML='';
   let bonusStarted=false;
   groups.forEach(g=>{
